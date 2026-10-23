@@ -1,0 +1,57 @@
+@model JobApplication
+
+<div asp-validation-summary="ModelOnly" class="field-error"></div>
+
+<div class="form-grid">
+    <div class="field">
+        <label asp-for="Company"></label>
+        <input asp-for="Company" class="input" autocomplete="organization" />
+        <span asp-validation-for="Company" class="field-error"></span>
+    </div>
+
+    <div class="field">
+        <label asp-for="Title"></label>
+        <input asp-for="Title" class="input" />
+        <span asp-validation-for="Title" class="field-error"></span>
+    </div>
+
+    <div class="field">
+        <label asp-for="Location"></label>
+        <input asp-for="Location" class="input" />
+        <span asp-validation-for="Location" class="field-error"></span>
+    </div>
+
+    <div class="field">
+        <label asp-for="Url"></label>
+        <input asp-for="Url" type="url" class="input" placeholder="https://" />
+        <span asp-validation-for="Url" class="field-error"></span>
+    </div>
+
+    <div class="field">
+        <label asp-for="Status"></label>
+        <select asp-for="Status" class="input">
+            @foreach (var s in Enum.GetValues<JobStatus>())
+            {
+                <option value="@s">@s.ToLabel()</option>
+            }
+        </select>
+    </div>
+
+    <div class="field">
+        <label asp-for="AppliedDate"></label>
+        <input asp-for="AppliedDate" type="date" class="input" />
+        <span asp-validation-for="AppliedDate" class="field-error"></span>
+    </div>
+
+    <div class="field">
+        <label asp-for="FollowUpDate"></label>
+        <input asp-for="FollowUpDate" type="date" class="input" />
+        <span asp-validation-for="FollowUpDate" class="field-error"></span>
+    </div>
+
+    <div class="field field-wide">
+        <label asp-for="Notes"></label>
+        <textarea asp-for="Notes" class="input" rows="5"></textarea>
+        <span asp-validation-for="Notes" class="field-error"></span>
+    </div>
+</div>

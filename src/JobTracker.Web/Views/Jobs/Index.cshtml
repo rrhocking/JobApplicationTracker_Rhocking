@@ -1,0 +1,92 @@
+@model JobListViewModel
+@{
+    ViewData["Title"] = "Applications";
+    var today = DateOnly.FromDateTime(DateTime.Today);
+}
+
+<div class="page-head">
+    <h1>Applications</h1>
+    <a asp-action="Create" class="button">Add job</a>
+</div>
+
+<form method="get" class="filters card">
+    <label class="visually-hidden" for="q">Search company or title</label>
+    <input id="q" name="q" value="@Model.Search" class="input" placeholder="Search company or title" />
+
+    <label class="visually-hidden" for="status">Status</label>
+    <select id="status" name="status" class="input">
+        <option value="">All statuses</option>
+        @foreach (var s in Enum.GetValues<JobStatus>())
+        {
+            <option value="@s" selected="@(Model.Status == s)">@s.ToLabel()</option>
+        }
+    </select>
+
+    <button type="submit" class="button secondary">Filter</button>
+    @if (Model.Status is not null || !string.IsNullOrWhiteSpace(Model.Search))
+    {
+        <a asp-action="Index" class="link">Clear</a>
+    }
+</form>
+
+@if (Model.Jobs.Count == 0)
+{
+    <p class="empty card">No applications found. <a asp-action="Create">Add one</a>.</p>
+}
+else
+{
+    <div class="table-wrap card">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th scope="col">Company</th>
+                    <th scope="col">Job title</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Applied</th>
+                    <th scope="col">Follow up</th>
+                    <th scope="col"><span class="visually-hidden">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var job in Model.Jobs)
+                {
+                    <tr>
+                        <td>
+                            <strong>@job.Company</strong>
+                            @if (!string.IsNullOrWhiteSpace(job.Location))
+                            {
+                                <br /><span class="muted">@job.Location</span>
+                            }
+                        </td>
+                        <td>
+                            @if (!string.IsNullOrWhiteSpace(job.Url))
+                            {
+                                <a href="@job.Url" target="_blank" rel="noopener noreferrer">@job.Title</a>
+                            }
+                            else
+                            {
+                                <text>@job.Title</text>
+                            }
+                        </td>
+                        <td><span class="badge @job.Status.ToCssClass()">@job.Status.ToLabel()</span></td>
+                        <td>@job.AppliedDate.ToString("MMM d, yyyy")</td>
+                        <td>
+                            @if (job.FollowUpDate is { } due)
+                            {
+                                <span class="@(job.IsFollowUpDue(today) ? "overdue" : null)">@due.ToString("MMM d, yyyy")</span>
+                            }
+                            else
+                            {
+                                <span class="muted">None</span>
+                            }
+                        </td>
+                        <td class="row-actions">
+                            <a asp-action="Edit" asp-route-id="@job.Id">Edit</a>
+                            <a asp-action="Delete" asp-route-id="@job.Id">Delete</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

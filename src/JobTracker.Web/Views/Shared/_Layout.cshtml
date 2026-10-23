@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - Job Tracker</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <header class="site-header">
+        <a class="brand" href="/">Job Tracker</a>
+        <nav aria-label="Main">
+            <a href="/">List</a>
+            <a href="/board">Board</a>
+            <a asp-controller="Jobs" asp-action="Create" class="button">Add job</a>
+        </nav>
+    </header>
+
+    <main class="container">
+        @if (TempData["Message"] is string message)
+        {
+            <p class="notice" role="status">@message</p>
+        }
+
+        @RenderBody()
+    </main>
+</body>
+</html>

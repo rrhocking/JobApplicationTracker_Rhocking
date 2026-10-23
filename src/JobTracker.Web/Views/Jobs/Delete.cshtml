@@ -1,0 +1,16 @@
+@model JobApplication
+@{
+    ViewData["Title"] = "Delete job";
+}
+
+<h1>Delete this application?</h1>
+
+<div class="card">
+    <p><strong>@Model.Title</strong> at <strong>@Model.Company</strong></p>
+    <p class="muted">Status: @Model.Status.ToLabel() &middot; Applied @Model.AppliedDate.ToString("MMM d, yyyy")</p>
+
+    <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="actions">
+        <button type="submit" class="button danger">Delete</button>
+        <a asp-action="Index" class="link">Cancel</a>
+    </form>
+</div>

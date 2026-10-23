@@ -1,0 +1,14 @@
+@inherits LayoutComponentBase
+
+<header class="site-header">
+    <a class="brand" href="/" data-enhance-nav="false">Job Tracker</a>
+    <nav aria-label="Main">
+        <a href="/" data-enhance-nav="false">List</a>
+        <NavLink href="board">Board</NavLink>
+        <a href="/Jobs/Create" class="button" data-enhance-nav="false">Add job</a>
+    </nav>
+</header>
+
+<main class="container">
+    @Body
+</main>

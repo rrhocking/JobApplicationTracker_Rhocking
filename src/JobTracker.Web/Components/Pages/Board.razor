@@ -1,0 +1,139 @@
+@page "/board"
+@rendermode InteractiveServer
+@inject IJobRepository Jobs
+
+<PageTitle>Board - Job Tracker</PageTitle>
+
+<div class="page-head">
+    <h1>Board</h1>
+</div>
+
+<EditForm Model="newJob" OnValidSubmit="AddAsync" class="quick-add card">
+    <DataAnnotationsValidator />
+    <div class="quick-add-fields">
+        <div class="field">
+            <label for="quick-company">Company</label>
+            <InputText id="quick-company" @bind-Value="newJob.Company" class="input" />
+            <ValidationMessage For="() => newJob.Company" class="field-error" />
+        </div>
+        <div class="field">
+            <label for="quick-title">Job title</label>
+            <InputText id="quick-title" @bind-Value="newJob.Title" class="input" />
+            <ValidationMessage For="() => newJob.Title" class="field-error" />
+        </div>
+        <button type="submit" class="button">Add to Applied</button>
+    </div>
+</EditForm>
+
+@if (!loaded)
+{
+    <p class="muted">Loading...</p>
+}
+else
+{
+    <div class="board">
+        @foreach (var status in Columns)
+        {
+            var column = items.Where(j => j.Status == status).ToList();
+
+            <section class="column" aria-labelledby="@("column-" + status)">
+                <h2 id="@("column-" + status)">
+                    @status.ToLabel() <span class="count">@column.Count</span>
+                </h2>
+
+                @foreach (var job in column)
+                {
+                    <article class="job-card">
+                        <strong>@job.Company</strong>
+                        <span>@job.Title</span>
+                        <span class="muted">Applied @job.AppliedDate.ToString("MMM d")</span>
+
+                        @if (job.FollowUpDate is { } due)
+                        {
+                            <span class="@(job.IsFollowUpDue(Today) ? "overdue" : "muted")">Follow up @due.ToString("MMM d")</span>
+                        }
+
+                        <div class="card-actions">
+                            <button type="button" class="icon-button"
+                                    aria-label="@("Move " + job.Company + " back one stage")"
+                                    disabled="@(!CanMove(job, -1))"
+                                    @onclick="() => MoveAsync(job, -1)">&larr;</button>
+                            <button type="button" class="icon-button"
+                                    aria-label="@("Move " + job.Company + " forward one stage")"
+                                    disabled="@(!CanMove(job, 1))"
+                                    @onclick="() => MoveAsync(job, 1)">&rarr;</button>
+
+                            @if (job.Status == JobStatus.Rejected)
+                            {
+                                <button type="button" class="link-button" @onclick="() => SetStatusAsync(job, JobStatus.Applied)">Reopen</button>
+                            }
+                            else
+                            {
+                                <button type="button" class="link-button" @onclick="() => SetStatusAsync(job, JobStatus.Rejected)">Reject</button>
+                            }
+
+                            <a href="@($"/Jobs/Edit/{job.Id}")" data-enhance-nav="false">Edit</a>
+                            <a href="@($"/Jobs/Delete/{job.Id}")" data-enhance-nav="false">Delete</a>
+                        </div>
+                    </article>
+                }
+            </section>
+        }
+    </div>
+}
+
+@code {
+    private static readonly JobStatus[] Columns = Enum.GetValues<JobStatus>();
+
+    private List<JobApplication> items = [];
+    private JobApplication newJob = new();
+    private bool loaded;
+
+    private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        items = (await Jobs.GetAllAsync()).ToList();
+        loaded = true;
+    }
+
+    private async Task AddAsync()
+    {
+        newJob.Status = JobStatus.Applied;
+        newJob.AppliedDate = Today;
+        await Jobs.AddAsync(newJob);
+
+        newJob = new JobApplication();
+        await LoadAsync();
+    }
+
+    // Wishlist -> Applied -> Phone screen -> Interview -> Offer. Rejected is handled by its own buttons.
+    private static bool CanMove(JobApplication job, int step)
+    {
+        if (job.Status == JobStatus.Rejected)
+        {
+            return false;
+        }
+
+        var target = (int)job.Status + step;
+        return target >= (int)JobStatus.Wishlist && target <= (int)JobStatus.Offer;
+    }
+
+    private async Task MoveAsync(JobApplication job, int step)
+    {
+        if (!CanMove(job, step))
+        {
+            return;
+        }
+
+        await SetStatusAsync(job, (JobStatus)((int)job.Status + step));
+    }
+
+    private async Task SetStatusAsync(JobApplication job, JobStatus status)
+    {
+        await Jobs.UpdateStatusAsync(job.Id, status);
+        await LoadAsync();
+    }
+}
