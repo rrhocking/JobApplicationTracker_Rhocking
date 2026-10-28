@@ -1,0 +1,17 @@
+@model ErrorViewModel
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<section class="card error-page">
+    <p class="error-code">@Model.StatusCode</p>
+    <h1>@Model.Title</h1>
+    <p class="muted">@Model.Message</p>
+
+    <div class="actions">
+        <a asp-controller="Jobs" asp-action="Index" class="button">Back to your applications</a>
+        <a href="/board">Open the board</a>
+    </div>
+
+    <p class="muted error-ref">Reference: <code>@Model.RequestId</code></p>
+</section>

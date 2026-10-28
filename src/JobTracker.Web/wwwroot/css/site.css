@@ -221,3 +221,10 @@ a { color: var(--accent); }
     .site-header { padding: .75rem 1rem; }
     .container { padding: 1rem; }
 }
+
+/* Friendly error pages */
+.error-page { max-width: 36rem; margin: 3rem auto; padding: 2rem 1.5rem; text-align: center; }
+.error-code { margin: 0; font-size: 4rem; font-weight: 700; line-height: 1; color: var(--accent); }
+.error-page h1 { margin: .5rem 0; }
+.error-page .actions { justify-content: center; }
+.error-ref { margin-top: 1.5rem; font-size: .8rem; }

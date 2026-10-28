@@ -30,15 +30,18 @@ if (builder.Configuration.GetValue<bool>("SeedDemoData"))
 
 if (!app.Environment.IsDevelopment())
 {
+    // Unhandled exceptions are re-run through /error, which shows a friendly page (no stack trace).
     app.UseExceptionHandler("/error");
     app.UseHsts();
 }
+
+// Empty 404/403/etc. responses are re-run through /error/{code}, so a bad URL gets a friendly page.
+app.UseStatusCodePagesWithReExecute("/error/{0}");
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAntiforgery();
 
-app.MapGet("/error", () => Results.Problem("Something went wrong."));
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Jobs}/{action=Index}/{id?}");
