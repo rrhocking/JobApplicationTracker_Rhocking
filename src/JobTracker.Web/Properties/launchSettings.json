@@ -21,7 +21,7 @@
     },
     "demo": {
       "commandName": "Project",
-      "commandLineArgs": "--SeedDemoData=true",
+      "commandLineArgs": "--SeedDemoData=false",
       "dotnetRunMessages": true,
       "launchBrowser": true,
       "applicationUrl": "http://localhost:5080",

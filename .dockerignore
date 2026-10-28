@@ -1,0 +1,12 @@
+# Keep the build context small and keep local files out of the image.
+**/bin/
+**/obj/
+.git/
+.github/
+.vs/
+**/App_Data/*.db
+**/App_Data/*.db-*
+tests/
+*.md
+Dockerfile
+.dockerignore

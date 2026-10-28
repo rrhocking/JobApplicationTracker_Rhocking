@@ -66,6 +66,23 @@ dotnet run --project src/JobTracker.Web --SeedDemoData=true
 The seed only runs when the table is empty, and it is off by default so your real applications are
 never mixed with sample ones.
 
+## Run it in Docker
+
+You need [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+
+```bash
+docker build -t jobtracker .
+docker run --rm -p 8080:8080 -v jobtracker-data:/data jobtracker
+```
+
+Open `http://localhost:8080`. The `-v jobtracker-data:/data` part is a named volume that holds the
+SQLite file, so your applications survive when the container is stopped and replaced.
+
+The image is built in two stages: the .NET SDK compiles and publishes the app, and only the published
+output is copied into the much smaller ASP.NET runtime image, which runs as a non-root user.
+Settings such as `ASPNETCORE_ENVIRONMENT` and the database path are environment variables, so the same
+image can be configured differently per environment without being rebuilt.
+
 ## Test it
 
 ```bash
@@ -81,7 +98,7 @@ well as in the logic.
 
 ## Roadmap
 
-1. Dockerfile and a container run.
+1. ~~Dockerfile and a container run.~~ (done)
 2. Azure resources defined in Bicep.
 3. Deploy workflow using GitHub OIDC (no stored secrets).
 4. A scheduled Azure Function that emails a daily follow-up list.
