@@ -28,3 +28,39 @@ jobs:
 
       - name: Test
         run: dotnet test --no-build --configuration Release --verbosity normal
+
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Build the Docker image
+        run: docker build --tag jobtracker:ci .
+
+      - name: Start the container
+        run: docker run --detach --name jobtracker --publish 8080:8080 jobtracker:ci
+
+      - name: Check the home page responds
+        run: |
+          # The app needs a few seconds to start, so keep trying for up to a minute.
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --output /dev/null http://localhost:8080/; then
+              echo "Home page responded on attempt $attempt"
+              exit 0
+            fi
+            echo "Attempt $attempt: not ready yet"
+            sleep 2
+          done
+          echo "The home page never responded"
+          exit 1
+
+      - name: Check an unknown page returns the friendly 404
+        run: |
+          status=$(curl --silent --output /dev/null --write-out '%{http_code}' http://localhost:8080/does-not-exist)
+          echo "Status: $status"
+          test "$status" = "404"
+
+      - name: Show container logs if something failed
+        if: failure()
+        run: docker logs jobtracker
