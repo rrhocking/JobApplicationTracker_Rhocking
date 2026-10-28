@@ -42,7 +42,18 @@ jobs:
         run: docker run --detach --name jobtracker --publish 8080:8080 jobtracker:ci
 
       - name: Check the home page responds
-        run: curl --fail --silent --show-error --retry 10 --retry-delay 2 --retry-connrefused http://localhost:8080/ > /dev/null
+        run: |
+          # The app needs a few seconds to start, so keep trying for up to a minute.
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --output /dev/null http://localhost:8080/; then
+              echo "Home page responded on attempt $attempt"
+              exit 0
+            fi
+            echo "Attempt $attempt: not ready yet"
+            sleep 2
+          done
+          echo "The home page never responded"
+          exit 1
 
       - name: Check an unknown page returns the friendly 404
         run: |
