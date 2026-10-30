@@ -1,66 +1,39 @@
-name: CI
+name: Publish image
 
+# Builds the Docker image and pushes it to GitHub Container Registry (ghcr.io)
+# every time main changes. Azure pulls the image from there.
 on:
   push:
     branches: [main]
-  pull_request:
+  workflow_dispatch: # also lets you run it by hand from the Actions tab
 
 permissions:
   contents: read
+  packages: write # needed to push to ghcr.io with the built-in token
 
 jobs:
-  build-and-test:
+  publish:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the code
         uses: actions/checkout@v4
 
-      - name: Set up .NET 10
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 10.0.x
+      - name: Work out the image name
+        # Registry names must be lowercase, and the repo name has capital letters.
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
 
-      - name: Restore
-        run: dotnet restore
+      - name: Sign in to GitHub Container Registry
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$TOKEN" | docker login ghcr.io --username "${{ github.actor }}" --password-stdin
 
-      - name: Build
-        run: dotnet build --no-restore --configuration Release
+      - name: Build the image
+        run: >
+          docker build
+          --label org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          --tag "$IMAGE:latest"
+          --tag "$IMAGE:${{ github.sha }}"
+          .
 
-      - name: Test
-        run: dotnet test --no-build --configuration Release --verbosity normal
-
-  docker-build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out the code
-        uses: actions/checkout@v4
-
-      - name: Build the Docker image
-        run: docker build --tag jobtracker:ci .
-
-      - name: Start the container
-        run: docker run --detach --name jobtracker --publish 8080:8080 jobtracker:ci
-
-      - name: Check the home page responds
-        run: |
-          # The app needs a few seconds to start, so keep trying for up to a minute.
-          for attempt in $(seq 1 30); do
-            if curl --fail --silent --output /dev/null http://localhost:8080/; then
-              echo "Home page responded on attempt $attempt"
-              exit 0
-            fi
-            echo "Attempt $attempt: not ready yet"
-            sleep 2
-          done
-          echo "The home page never responded"
-          exit 1
-
-      - name: Check an unknown page returns the friendly 404
-        run: |
-          status=$(curl --silent --output /dev/null --write-out '%{http_code}' http://localhost:8080/does-not-exist)
-          echo "Status: $status"
-          test "$status" = "404"
-
-      - name: Show container logs if something failed
-        if: failure()
-        run: docker logs jobtracker
+      - name: Push the image
+        run: docker push --all-tags "$IMAGE"
