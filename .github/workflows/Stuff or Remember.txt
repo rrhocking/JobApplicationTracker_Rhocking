@@ -1,0 +1,5 @@
+https://www.linkedin.com/in/robin-hocking-ab6550446/
+
+
+Can you read robinhocking81@gmail.com and list out the C# jobs going back to Oct 23.  Take out duplicates and any listed in the Jobs applied.  Also take out jobs that are not remote or in the state of georgia.  Order them by Seniority level and location.
+
