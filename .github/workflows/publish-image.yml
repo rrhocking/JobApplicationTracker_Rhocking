@@ -1,0 +1,39 @@
+name: Publish image
+
+# Builds the Docker image and pushes it to GitHub Container Registry (ghcr.io)
+# every time main changes. Azure pulls the image from there.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # also lets you run it by hand from the Actions tab
+
+permissions:
+  contents: read
+  packages: write # needed to push to ghcr.io with the built-in token
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Work out the image name
+        # Registry names must be lowercase, and the repo name has capital letters.
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+
+      - name: Sign in to GitHub Container Registry
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$TOKEN" | docker login ghcr.io --username "${{ github.actor }}" --password-stdin
+
+      - name: Build the image
+        run: >
+          docker build
+          --label org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          --tag "$IMAGE:latest"
+          --tag "$IMAGE:${{ github.sha }}"
+          .
+
+      - name: Push the image
+        run: docker push --all-tags "$IMAGE"
