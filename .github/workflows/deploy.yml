@@ -1,0 +1,54 @@
+name: Deploy to Azure
+
+# Runs after "Publish image" succeeds on main, then deploys the Bicep files to Azure
+# with that exact image version. It can also be started by hand from the Actions tab.
+on:
+  workflow_run:
+    workflows: ["Publish image"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  id-token: write # lets the job ask GitHub for an OIDC token to sign in to Azure
+  contents: read
+
+env:
+  RESOURCE_GROUP: rg-jobtracker
+
+jobs:
+  deploy:
+    # Skip when the publish run failed. A manual run always goes ahead.
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Work out which image to deploy
+        # Registry names are lowercase. The tag is the commit that was published.
+        run: |
+          echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}:${{ github.event.workflow_run.head_sha || github.sha }}" >> "$GITHUB_ENV"
+
+      - name: Sign in to Azure (OIDC, no password)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy the Bicep file
+        id: deploy
+        run: |
+          url=$(az deployment group create \
+            --resource-group "$RESOURCE_GROUP" \
+            --template-file infra/main.bicep \
+            --parameters appName=jobtracker image="$IMAGE" \
+            --query properties.outputs.appUrl.value \
+            --output tsv)
+          echo "App URL: $url"
+          echo "### Deployed" >> "$GITHUB_STEP_SUMMARY"
+          echo "Image: \`$IMAGE\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Address: $url" >> "$GITHUB_STEP_SUMMARY"
