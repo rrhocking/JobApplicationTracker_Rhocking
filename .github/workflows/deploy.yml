@@ -45,6 +45,10 @@ jobs:
           # The database administrator password. It lives only in GitHub (Settings > Secrets), is handed
           # to Azure at deploy time, and GitHub hides it from the logs.
           SQL_ADMIN_PASSWORD: ${{ secrets.SQL_ADMIN_PASSWORD }}
+          # Region for the SQL server only. New Azure accounts are sometimes blocked from creating SQL servers
+          # in a busy region. Change it without editing code: Settings > Secrets and variables > Actions >
+          # Variables > SQL_LOCATION. Once a region works, leave it alone (moving a server means recreating it).
+          SQL_LOCATION: ${{ vars.SQL_LOCATION || 'centralus' }}
         run: |
           if [ -z "$SQL_ADMIN_PASSWORD" ]; then
             echo "::error::The SQL_ADMIN_PASSWORD secret is missing. Add it under Settings > Secrets and variables > Actions."
@@ -53,7 +57,7 @@ jobs:
           url=$(az deployment group create \
             --resource-group "$RESOURCE_GROUP" \
             --template-file infra/main.bicep \
-            --parameters appName=jobtracker image="$IMAGE" sqlAdminPassword="$SQL_ADMIN_PASSWORD" \
+            --parameters appName=jobtracker image="$IMAGE" sqlAdminPassword="$SQL_ADMIN_PASSWORD" sqlLocation="$SQL_LOCATION" \
             --query properties.outputs.appUrl.value \
             --output tsv)
           echo "App URL: $url"
