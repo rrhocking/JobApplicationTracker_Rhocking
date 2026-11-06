@@ -6,6 +6,7 @@ Azure resources for the Job Tracker, written in [Bicep](https://learn.microsoft.
 | --- | --- |
 | Log Analytics workspace | Stores the app's logs. A daily cap keeps it from becoming a cost. |
 | Container Apps environment | Shared serverless hosting space (Consumption plan). |
+| SQL server and database | Azure SQL Database on the free offer. The app's data lives here, so it survives redeploys. |
 | Container app | Runs the Docker image on port 8080 and scales to zero when idle. |
 
 The image comes from GitHub Container Registry (`ghcr.io`), so it must be public and must be
@@ -20,6 +21,11 @@ You need the [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli
 # One-time: make sure the services this uses are registered on the subscription
 az provider register --namespace Microsoft.App
 az provider register --namespace Microsoft.OperationalInsights
+az provider register --namespace Microsoft.Sql
+
+# The database administrator password (letters and numbers only, at least 12 characters).
+# PowerShell:  $env:SQL_ADMIN_PASSWORD = "<your password>"
+# Bash:        export SQL_ADMIN_PASSWORD="<your password>"
 
 # Create an empty resource group to hold everything
 az group create --name rg-jobtracker --location eastus

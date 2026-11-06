@@ -8,12 +8,30 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 
-// The database is a single SQLite file. Set ConnectionStrings:JobTracker to put it somewhere else.
-var connectionString = builder.Configuration.GetConnectionString("JobTracker")
-    ?? CreateDefaultConnectionString(builder.Environment.ContentRootPath);
+// Which database to use is a setting, not code: Database:Provider is "Sqlite" (the default, handy on
+// your own computer) or "SqlServer" (Azure SQL in the cloud). In Azure it is set by the Bicep file.
+var provider = builder.Configuration["Database:Provider"] ?? "Sqlite";
 
-var repository = new SqliteJobRepository(connectionString);
-repository.EnsureCreated();
+IJobRepository repository;
+if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
+{
+    var sqlConnectionString = builder.Configuration.GetConnectionString("JobTracker")
+        ?? throw new InvalidOperationException("Database:Provider is SqlServer but ConnectionStrings:JobTracker is not set.");
+
+    var sqlRepository = new SqlServerJobRepository(sqlConnectionString);
+    await sqlRepository.EnsureCreatedAsync();
+    repository = sqlRepository;
+}
+else
+{
+    // SQLite is a single file. Set ConnectionStrings:JobTracker to put it somewhere else.
+    var connectionString = builder.Configuration.GetConnectionString("JobTracker")
+        ?? CreateDefaultConnectionString(builder.Environment.ContentRootPath);
+
+    var sqliteRepository = new SqliteJobRepository(connectionString);
+    sqliteRepository.EnsureCreated();
+    repository = sqliteRepository;
+}
 
 // The repository opens a short-lived connection for every call and holds no state, so one
 // shared instance is safe for MVC requests and for long-lived Blazor Server circuits alike.
