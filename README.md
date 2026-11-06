@@ -2,7 +2,8 @@
 
 A small web app for tracking job applications from first interest through offer. It is built with
 **C# on .NET 10**, mixing **ASP.NET Core MVC** for the page-based screens with an interactive
-**Blazor** board, and it stores data in SQLite using plain **ADO.NET** (no Entity Framework).
+**Blazor** board, and it stores data using plain **ADO.NET** (no Entity Framework): SQLite on your own computer and
+**Azure SQL Database** when deployed to Azure.
 
 ## Features
 
@@ -21,13 +22,15 @@ flowchart LR
     MVC --> Repo["IJobRepository"]
     Blazor --> Repo
     Repo --> Sqlite["SqliteJobRepository<br/>(ADO.NET)"]
-    Sqlite --> Db[("SQLite file")]
+    Repo --> SqlServer["SqlServerJobRepository<br/>(ADO.NET)"]
+    Sqlite --> Db[("SQLite file<br/>local and Docker")]
+    SqlServer --> Azure[("Azure SQL Database<br/>in Azure")]
 ```
 
 | Folder | What it holds |
 | --- | --- |
 | `src/JobTracker.Web/Models` | `JobApplication`, `JobStatus`, and the list page's view model |
-| `src/JobTracker.Web/Data` | `IJobRepository` and the SQLite implementation |
+| `src/JobTracker.Web/Data` | `IJobRepository` and its SQLite and SQL Server implementations |
 | `src/JobTracker.Web/Controllers`, `Views` | The MVC screens |
 | `src/JobTracker.Web/Components` | The Blazor app shell, layout, and board page |
 | `tests/JobTracker.Tests` | xUnit tests that run the real SQL against a temporary SQLite file |
@@ -45,6 +48,9 @@ flowchart LR
   that benefits from interactivity. Both use the same repository and the same stylesheet.
 - **LIKE wildcards are escaped**, so searching for `100%` or `a_b` matches those characters literally.
 - **Dates are stored as ISO text** (`2026-10-22`), which sorts correctly as plain text in SQLite.
+  In Azure SQL they use the real `DATE` type.
+- **The database is a setting.** `Database:Provider` chooses `Sqlite` (default) or `SqlServer`, so the
+  same image runs against either. Azure sets it through environment variables in `infra/main.bicep`.
 
 ## Run it
 
@@ -83,6 +89,15 @@ output is copied into the much smaller ASP.NET runtime image, which runs as a no
 Settings such as `ASPNETCORE_ENVIRONMENT` and the database path are environment variables, so the same
 image can be configured differently per environment without being rebuilt.
 
+## Database in Azure
+
+When deployed, the app uses **Azure SQL Database** on the free offer (serverless, pauses itself when idle),
+defined in `infra/main.bicep`. Because the data lives outside the container, it survives redeploys and
+restarts. The first request after a long idle period can take up to a minute while the database wakes up.
+
+The database administrator password is a GitHub secret named `SQL_ADMIN_PASSWORD`. It is passed to Azure
+at deploy time and is never stored in the repository.
+
 ## Test it
 
 ```bash
@@ -99,7 +114,8 @@ well as in the logic.
 ## Roadmap
 
 1. ~~Dockerfile and a container run.~~ (done)
-2. Azure resources defined in Bicep.
-3. Deploy workflow using GitHub OIDC (no stored secrets).
-4. A scheduled Azure Function that emails a daily follow-up list.
-5. Application Insights monitoring and alerts.
+2. ~~Azure resources defined in Bicep.~~ (done)
+3. ~~Deploy workflow using GitHub OIDC (no stored secrets).~~ (done)
+4. ~~Azure SQL Database instead of a SQLite file in the container.~~ (done)
+5. A scheduled Azure Function that emails a daily follow-up list.
+6. Application Insights monitoring and alerts.
